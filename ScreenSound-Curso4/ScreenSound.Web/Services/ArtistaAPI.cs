@@ -20,7 +20,8 @@ public class ArtistaAPI
 
     public async Task AddArtistaAsync(ArtistaRequest artista)
     {
-        await _httpClient.PostAsJsonAsync("artistas", artista);
+        using var response = await _httpClient.PostAsJsonAsync("artistas", artista);
+        response.EnsureSuccessStatusCode();
     }
 
     public async Task<ArtistaResponse?> GetArtistaPorNomeAsync(string nome)

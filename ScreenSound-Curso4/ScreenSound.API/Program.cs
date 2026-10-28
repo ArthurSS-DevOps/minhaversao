@@ -1,20 +1,22 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using ScreenSound.API.Endpoints;
 using ScreenSound.Banco;
 using ScreenSound.Modelos;
 using ScreenSound.Shared.Dados.Modelos;
 using ScreenSound.Shared.Modelos.Modelos;
-using System.Data.SqlTypes;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("ScreenSoundDB")
+    ?? throw new InvalidOperationException(
+        "Connection string 'ScreenSoundDB' is missing. Configure it using user-secrets or the ConnectionStrings__ScreenSoundDB environment variable.");
+
 builder.Services.AddDbContext<ScreenSoundContext>((options) => {
     options
-            .UseSqlServer(builder.Configuration["ConnectionStrings:ScreenSoundDB"])
+            .UseMySQL(connectionString)
             .UseLazyLoadingProxies();
 });
 
@@ -40,7 +42,6 @@ builder.Services.AddCors(
         policy => policy.WithOrigins([builder.Configuration["BackendUrl"] ?? "https://localhost:7089",
             builder.Configuration["FrontendUrl"] ?? "https://localhost:7015"])
             .AllowAnyMethod()
-            .SetIsOriginAllowed(pol => true)
             .AllowAnyHeader()
             .AllowCredentials()));
 
@@ -56,13 +57,13 @@ app.AddEndPointsArtistas();
 app.AddEndPointsMusicas();
 app.AddEndPointGeneros();
 
-app.MapGroup("auth").MapIdentityApi<PessoaComAcesso>().WithTags("Autorização");
+app.MapGroup("auth").MapIdentityApi<PessoaComAcesso>().WithTags("Autorizaï¿½ï¿½o");
 
 app.MapPost("auth/logout", async ([FromServices] SignInManager<PessoaComAcesso> signInManager) =>
 {
     await signInManager.SignOutAsync();
     return Results.Ok();
-}).RequireAuthorization().WithTags("Autorização");
+}).RequireAuthorization().WithTags("Autorizaï¿½ï¿½o");
 
 app.UseSwagger();
 app.UseSwaggerUI();

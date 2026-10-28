@@ -42,16 +42,34 @@ public static class ArtistasExtensions
 
         groupBuilder.MapPost("", async ([FromServices] IHostEnvironment env, [FromServices] DAL<Artista> dal, [FromBody] ArtistaRequest artistaRequest) =>
         {
+            if (string.IsNullOrWhiteSpace(artistaRequest.fotoPerfil))
+            {
+                return Results.BadRequest("Selecione uma imagem para o artista.");
+            }
+
+            byte[] imagem;
+            try
+            {
+                imagem = Convert.FromBase64String(artistaRequest.fotoPerfil);
+            }
+            catch (FormatException)
+            {
+                return Results.BadRequest("A imagem enviada não está em um formato válido.");
+            }
+
+            if (imagem.Length == 0)
+            {
+                return Results.BadRequest("A imagem enviada está vazia.");
+            }
 
             var nome = artistaRequest.nome.Trim();
             var imagemArtista = DateTime.Now.ToString("ddMMyyyyhhss") + "." + nome + ".jpg";
 
-            var path = Path.Combine(env.ContentRootPath,
-                "wwwroot", "FotosPerfil", imagemArtista);
+            var diretorioImagens = Path.Combine(env.ContentRootPath, "wwwroot", "FotosPerfil");
+            Directory.CreateDirectory(diretorioImagens);
+            var path = Path.Combine(diretorioImagens, imagemArtista);
 
-            using MemoryStream ms = new MemoryStream(Convert.FromBase64String(artistaRequest.fotoPerfil!));
-            using FileStream fs = new(path, FileMode.Create);
-            await ms.CopyToAsync(fs);
+            await File.WriteAllBytesAsync(path, imagem);
 
             var artista = new Artista(artistaRequest.nome, artistaRequest.bio) { FotoPerfil = $"/FotosPerfil/{imagemArtista}" };
 
